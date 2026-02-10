@@ -38,7 +38,7 @@ const processes = new Map();
 const sanitize = (name) => name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
 app.post('/api/deploy', async (req, res) => {
-    const { repoUrl, buildCmd, runCmd, envVars } = req.body;
+    const { repoUrl, buildCmd, runCmd, envVars, proxy } = req.body;
     const id = uuidv4();
     const repoName = repoUrl.split('/').pop().replace('.git', '');
     const deployPath = path.join(DEPLOY_DIR, `${sanitize(repoName)}_${id}`);
@@ -65,6 +65,12 @@ app.post('/api/deploy', async (req, res) => {
         const botEnv = { ...process.env, ...envVars };
         if (!envVars.PORT) {
             botEnv.PORT = Math.floor(Math.random() * (65535 - 10000) + 10000);
+        }
+
+        // Inject proxy if provided
+        if (proxy) {
+            botEnv.SOCKS_PROXY = proxy;
+            io.emit('log', { id, text: `Routing through proxy: ${proxy.split('@').pop()}` });
         }
 
         const botProcess = spawn(runCmd, {

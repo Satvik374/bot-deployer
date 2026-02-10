@@ -17,6 +17,7 @@ function App() {
   const [repoUrl, setRepoUrl] = useState('');
   const [buildCmd, setBuildCmd] = useState('npm install');
   const [runCmd, setRunCmd] = useState('node index.js');
+  const [proxy, setProxy] = useState('');
   const [envVars, setEnvVars] = useState([{ key: '', value: '' }]);
   const [logs, setLogs] = useState({});
   const [activeBotId, setActiveBotId] = useState(null);
@@ -61,7 +62,7 @@ function App() {
 
     try {
       const res = await axios.post(`${API_BASE}/api/deploy`, {
-        repoUrl, buildCmd, runCmd, envVars: env
+        repoUrl, buildCmd, runCmd, envVars: env, proxy
       });
       toast.success('Sequence initiated', { id: toastId });
       setActiveBotId(res.data.id);
@@ -250,6 +251,15 @@ function App() {
                       <label><Rocket size={14} style={{ marginBottom: '-2px' }} /> Entry Command</label>
                       <input value={runCmd} onChange={e => setRunCmd(e.target.value)} required />
                     </div>
+                  </div>
+
+                  <div className="input-group">
+                    <label><Globe size={14} style={{ marginBottom: '-2px' }} /> SOCKS5 Proxy (Optional)</label>
+                    <input
+                      placeholder="host:port or host:port:user:pass"
+                      value={proxy}
+                      onChange={e => setProxy(e.target.value)}
+                    />
                   </div>
 
                   <div className="input-group">
