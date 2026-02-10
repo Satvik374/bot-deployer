@@ -60,10 +60,17 @@ app.post('/api/deploy', async (req, res) => {
         }
 
         io.emit('log', { id, text: `Starting bot: ${runCmd}` });
+
+        // Avoid port conflict on Render/hosting services
+        const botEnv = { ...process.env, ...envVars };
+        if (!envVars.PORT) {
+            botEnv.PORT = Math.floor(Math.random() * (65535 - 10000) + 10000);
+        }
+
         const botProcess = spawn(runCmd, {
             shell: true,
             cwd: deployPath,
-            env: { ...process.env, ...envVars }
+            env: botEnv
         });
 
         processes.set(id, {
