@@ -3,7 +3,7 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import { Rocket, Box, Activity, Terminal as TerminalIcon, Plus, Trash2, StopCircle } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
 const socket = io(API_BASE);
 
 function App() {
