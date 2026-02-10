@@ -166,3 +166,30 @@ app.post('/api/restart/:id', async (req, res) => {
 server.listen(PORT, () => {
     console.log(`Backend running on port ${PORT}`);
 });
+
+app.post('/api/check-connection', (req, res) => {
+    const { host, port } = req.body;
+    if (!host || !port) return res.status(400).json({ error: 'Host and port required' });
+
+    const net = require('net');
+    const socket = new net.Socket();
+
+    socket.setTimeout(5000);
+
+    socket.on('connect', () => {
+        socket.destroy();
+        res.json({ success: true, message: `Successfully connected to ${host}:${port}` });
+    });
+
+    socket.on('timeout', () => {
+        socket.destroy();
+        res.json({ success: false, error: 'Connection timed out' });
+    });
+
+    socket.on('error', (err) => {
+        socket.destroy();
+        res.json({ success: false, error: err.message });
+    });
+
+    socket.connect(port, host);
+});

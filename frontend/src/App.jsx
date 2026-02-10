@@ -21,6 +21,7 @@ function App() {
   const [logs, setLogs] = useState({});
   const [activeBotId, setActiveBotId] = useState(null);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
 
   const terminalEndRef = useRef(null);
 
@@ -91,6 +92,40 @@ function App() {
       fetchBots();
     } catch (e) {
       toast.error('Reboot failed', { id: toastId });
+    }
+  };
+
+  const checkConnection = async () => {
+    if (!repoUrl) {
+      toast.error('Enter a host/IP in the Repo URL field to test probe');
+      return;
+    }
+
+    const hostMatch = repoUrl.match(/([a-zA-Z0-9.-]+\.[a-z]{2,})/);
+    const portMatch = repoUrl.match(/:(\d+)/);
+
+    const host = hostMatch ? hostMatch[1] : null;
+    const port = portMatch ? parseInt(portMatch[1]) : 25565;
+
+    if (!host) {
+      toast.error('Could not identify host in input');
+      return;
+    }
+
+    setIsTesting(true);
+    const toastId = toast.loading(`Probing ${host}:${port}...`);
+
+    try {
+      const res = await axios.post(`${API_BASE}/api/check-connection`, { host, port });
+      if (res.data.success) {
+        toast.success(res.data.message, { id: toastId, duration: 5000 });
+      } else {
+        toast.error(`Blocked: ${res.data.error}`, { id: toastId, duration: 6000 });
+      }
+    } catch (e) {
+      toast.error('Diagnostic probe failed', { id: toastId });
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -186,7 +221,18 @@ function App() {
 
                 <form onSubmit={handleDeploy} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                   <div className="input-group">
-                    <label><Github size={14} style={{ marginBottom: '-2px' }} /> Repository URL</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label><Github size={14} style={{ marginBottom: '-2px' }} /> Repository URL</label>
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={checkConnection}
+                        disabled={isTesting}
+                        style={{ padding: '0.25rem 0.75rem', fontSize: '0.7rem', background: 'rgba(139, 92, 246, 0.1)', border: '1px solid var(--border-active)' }}
+                      >
+                        {isTesting ? 'Probing...' : 'Test Connection'}
+                      </button>
+                    </div>
                     <input
                       placeholder="https://github.com/profile/repository"
                       value={repoUrl}
