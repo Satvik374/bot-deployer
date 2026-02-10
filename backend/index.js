@@ -78,7 +78,10 @@ app.post('/api/deploy', async (req, res) => {
             status: 'running',
             repoUrl,
             deployPath,
-            repoName
+            repoName,
+            runCmd,
+            buildCmd,
+            env: botEnv
         });
 
         botProcess.stdout.on('data', (data) => io.emit('log', { id, text: data.toString() }));
@@ -116,6 +119,47 @@ app.post('/api/stop/:id', (req, res) => {
         res.json({ message: 'Bot stopped' });
     } else {
         res.status(404).json({ error: 'Bot not found' });
+    }
+});
+
+app.post('/api/restart/:id', async (req, res) => {
+    const { id } = req.params;
+    const botData = processes.get(id);
+
+    if (!botData) {
+        return res.status(404).json({ error: 'Bot not found' });
+    }
+
+    try {
+        // Kill existing process if running
+        if (botData.process) {
+            botData.process.kill();
+        }
+
+        io.emit('log', { id, text: '--- RESTART INITIATED ---' });
+
+        const botProcess = spawn(botData.runCmd, {
+            shell: true,
+            cwd: botData.deployPath,
+            env: botData.env
+        });
+
+        botData.process = botProcess;
+        botData.status = 'running';
+
+        botProcess.stdout.on('data', (data) => io.emit('log', { id, text: data.toString() }));
+        botProcess.stderr.on('data', (data) => io.emit('log', { id, text: data.toString() }));
+
+        botProcess.on('close', (code) => {
+            io.emit('log', { id, text: `Process exited with code ${code}` });
+            if (processes.has(id)) {
+                processes.get(id).status = 'stopped';
+            }
+        });
+
+        res.json({ message: 'Restarted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 

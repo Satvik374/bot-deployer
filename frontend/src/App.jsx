@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
 import {
   Rocket, Box, Activity, Terminal as TerminalIcon,
-  Plus, Trash2, StopCircle, Github, Cpu,
+  Plus, Trash2, StopCircle, RefreshCw, Github, Cpu,
   Server, Globe, ChevronRight
 } from 'lucide-react';
 
@@ -80,6 +80,17 @@ function App() {
       fetchBots();
     } catch (e) {
       toast.error('Failed to terminate process');
+    }
+  };
+
+  const restartBot = async (id) => {
+    const toastId = toast.loading('Rebooting system...');
+    try {
+      await axios.post(`${API_BASE}/api/restart/${id}`);
+      toast.success('System rebooted', { id: toastId });
+      fetchBots();
+    } catch (e) {
+      toast.error('Reboot failed', { id: toastId });
     }
   };
 
@@ -264,6 +275,9 @@ function App() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button className="btn btn-secondary" onClick={() => restartBot(activeBotId)}>
+                      <RefreshCw size={18} /> Restart Instance
+                    </button>
                     {bots.find(b => b.id === activeBotId)?.status === 'running' && (
                       <button className="btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={() => stopBot(activeBotId)}>
                         <StopCircle size={18} /> Stop Instance
